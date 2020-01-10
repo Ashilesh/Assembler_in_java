@@ -1,0 +1,14 @@
+INDEX VERSION 1.126+/home/02_USER_TE_COMP/spos-41/Assembler/.metadata/.plugins/org.eclipse.jdt.core
+597542615.index
+4142400312.index
+2791527970.index
+4036216344.index
+2682183658.index
+878726106.index
+3864713855.index
+1167330098.index
+3209977043.index
+252195610.index
+3983866405.index
+1005434859.index
+1633053781.index
