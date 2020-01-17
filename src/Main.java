@@ -7,27 +7,19 @@ public class Main{
 	static int lc = 0;
 	static int inc = 0;
 	static FileWriter fw;
+	static LinkedList<LiteralTable> litTable = new LinkedList<LiteralTable>();
 	
 	public static void main(String[] args) throws IOException{
-//		
-//		FileWriter fw = new FileWriter("input.asm");
-//		
-//		fw.write("Hello");
-//		fw.close();
 		
 		String str;
 		String tokens[];
 		Main m = new Main();
-		int i = 0;
-		
-		
-		
-		
+
 		try{
 			FileReader fr = new FileReader("input.asm");
 			fw = new FileWriter("output.txt");
 			Scanner sc = new Scanner(new BufferedReader(fr));
-			boolean check,first_t;
+			boolean check;
 			
 			
 			while(sc.hasNextLine()){
@@ -51,17 +43,20 @@ public class Main{
 					check = m.checkInstructionPOT(tokens[1]);
 					
 					if(check) {
-						m.POTOperation(tokens[1],tokens[2],tokens[0]);
+						if(tokens.length == 3)
+							m.POTOperation(tokens[1],tokens[2],tokens[0]);
+						else if(tokens.length == 2)
+							m.POTOperation(tokens[1], null, tokens[0]);
 					}
 					else{
-						check = m.checkInstructionMOT(tokens[1]);
+						if(tokens.length == 3)
+							check = m.motOperation(tokens[1],tokens[2]);
 						
-						// if found in mot do operation according to format
-						if(check){
-							m.motOperation(tokens[1],tokens[2]);
-						}
+							
 							
 					}
+					
+
 					
 					
 					// end tokens[1]
@@ -86,7 +81,7 @@ public class Main{
 					
 					// increment lc
 					lc = lc + inc;
-					// end inc lc
+					// end increment lc
 					
 
 					
@@ -96,6 +91,7 @@ public class Main{
 				
 			}
 			
+			sc.close();
 			fr.close();
 			fw.close();
 			
@@ -111,23 +107,33 @@ public class Main{
 			System.out.println(s.sym_name + " " + s.addr + " " + s.length + " " + s.relocation);
 		}
 		
+		// testing literal table
+			System.out.println("\nLiteral Table------------");
+			for(LiteralTable s : litTable){
+				System.out.println(s.name + " " + s.addr + " " + s.length + " " + s.relocation);
+		}
+		
 	}
 
 
-	void motOperation(String opString,String param) throws FileNotFoundException,IOException{
+	boolean motOperation(String opString,String param) throws FileNotFoundException,IOException{
 		
 		// get file contents in tokens[] and check if exist
 		FileReader fr = new FileReader("MOT.txt");
 		
-		int positionOfSymbol = -1;
+		
 		
 		String tokens[] = null;
-		boolean res = false, isSymbolInTable = false;
+		boolean res = false;
 		
 		Scanner sc = new Scanner(new BufferedReader(fr));
 		
 		while(sc.hasNextLine()){
+		
+			
 			String temp = sc.nextLine();
+			
+	
 			tokens = temp.split("\t");
 			
 			if(tokens[0].equalsIgnoreCase(opString)){
@@ -146,6 +152,7 @@ public class Main{
 			
 			if(tokens[3].equalsIgnoreCase("RR")){
 				
+				
 				inc = Integer.parseInt(tokens[2]);
 				
 				// write instruction ,label and registers in file
@@ -157,42 +164,24 @@ public class Main{
 				// write instruction and first register to file
 				fw.write("\t" + opString + "\t" + params[0] + "," );
 				
-				// check if already exist in symbol table
-				for(int i = 0 ; i < symTable.size() ; i++){
-					if(symTable.get(i).sym_name.equalsIgnoreCase(params[1])){
-						positionOfSymbol = i;	
-						isSymbolInTable = true;
-					}
-				}
-				// end checking
 				
+				// processing second parameter of RX
+				processSecondParam(params[1]);
 				
-				// if not in symbol table create new object
-				if(!isSymbolInTable){
-					SymbolTable s = new SymbolTable();
-					s.sym_name = params[1];
-					
-					symTable.add(s);
-					
-					positionOfSymbol = symTable.size() - 1;
-					
-				}
-				// end new object
-				
-				// set increment counter
+				// increment counter
 				inc = Integer.parseInt(tokens[2]);
-				//
 				
-				// write $ to file
-				fw.write("$" + positionOfSymbol);
 			}
 			
 			
 		}
+		sc.close();
+		
+		return res;
 	}
 
 
-	void insertLabel(String string0, String string1,String string2) {
+	void insertLabel(String string0, String string1,String string2) throws IOException {
 	
 		boolean found = false;
 		String reloc = null;
@@ -214,7 +203,6 @@ public class Main{
 			inc = length;
 		}
 			
-		
 		// set relocation
 		reloc = "R";
 		
@@ -289,6 +277,7 @@ public class Main{
 			
 		}
 		
+		sc.close();
 		return res;
 	}
 	
@@ -323,22 +312,40 @@ public class Main{
 		else if(operation.equalsIgnoreCase("USING")) {
 			fw.write(label + "\t" + operation + "\t" + parameter); 
 		}
+		else if(operation.equalsIgnoreCase("LTORG")){
+			processLitreral();
+		}
+		else if(operation.equalsIgnoreCase("END")){
+			int temp_lc = lc;
+			processLitreral();
+			if(lc != temp_lc)
+				fw.write("\n" + lc);
+		}
 	}
 
-	void startOperation(String par){
+	void startOperation(String par)throws IOException{
 		int l = Integer.parseInt(par);
 		
 		lc = l;	
+		
+		fw.write("\n" + lc + "\t");
+		
 	}
 	
-	int dcSymbolLength(String param) {
+	
+	
+	int dcSymbolLength(String param) throws IOException {
+		
+		// remaining: check for array here
 		
 		int len = 4;
 		
 		
 		String tokens[] = param.split("'");
 		String lengths[] = tokens[0].split("F");
-		// check for half word too
+		// remaining: check for half word too
+		
+		
 		
 		if(lengths.length != 0)
 			len = Integer.parseInt(lengths[0]);
@@ -354,19 +361,165 @@ public class Main{
 	
 	int dsSymbolLength(String string2) {
 		
+		// getting length in string '1F' getting 1
 		String len_s = string2.substring(0, string2.length()-1);
 		
 		int len = Integer.parseInt(len_s);
 		
+		// getting type of storage
 		String type = string2.substring(string2.length()-1);
 		
+		//checking type
 		if(type.equals("F"))
 			len = len * 4;
 		
 		return len;
 	}
+	
+	void insertLiteral(String val) throws IOException{
+		
+		boolean isAlreadyInLiteralTable = false;
+		int position = -1;
+		
+		for(int i = 0 ; i < litTable.size() ; i++){
+			if(litTable.get(i).name.equalsIgnoreCase(val)){
+				position = i;
+				isAlreadyInLiteralTable = true;
+				position = position + 1;
+				break;
+			}
+			
+		}
+		
+		// if not in literal table 
+		// insert into Linked List
+		if(!isAlreadyInLiteralTable){
+			LiteralTable temp = new LiteralTable();
+			temp.name = val;
+			
+			litTable.add(temp);
+			
+			position = litTable.size();
+		}
+		
+		fw.write("#" + position);
+		
+	}
+	
+	void processLitreral() throws IOException{
+		
+		// todo : Handle literals if they are in array
+		
+		for(int i = 0 ; i < litTable.size() ; i++){
+			
+			LiteralTable l = litTable.get(i);
+			
+			// process if addr is -1
+			if(l.addr == -1){
+				
+				
+				String tokens[] = l.name.split("'");
+				String length;
+				int lenInInt = 0;
+				
+				// size of literal
+				// if more values with F ex. '2F' token then
+				if(tokens[0].length() != 1)
+					length = tokens[0].substring(0, tokens[0].length());
+				// if only one token then
+				else
+					length = "1";
+					
+				lenInInt = Integer.parseInt(length);
+				
+				lenInInt = lenInInt * 4;
+				l.length = lenInInt;
+				// end of size
+				
+				// check divisibility by 8 of lc
+				while(lc % 8 != 0){
+					lc++;
+					fw.write(" ------\n" + lc +"\t");
+				}
+				
+				
+				// put addr in litTable
+				l.addr = lc;
+				
+				// put relocatable
+				l.relocation = "R";
+				
+				
+				lc = lc + lenInInt;
+				
+				fw.write(tokens[1]);
+				
+				
+			}
+		}
+		
+		
+	}
+	
+	// return true if Symbol
+	boolean processSecondParam(String arg) throws IOException{
+		boolean res = true;
+		
+		if(arg.charAt(0) == '='){
+			// Literal process
+			res = false;
+			
+			insertLiteral(arg.substring(1));
+			
+		
+		}
+		else{
+			// Symbol process
+			processSymbol(arg);
+		}
+		return res;
+		
+	}
+	
+	// returns true if it is already in table
+	boolean processSymbol(String arg) throws IOException{
+		// Symbol operation start
+		
+		int positionOfSymbol = -1;
+		boolean isSymbolInTable = false;
+		// check if already exist in symbol table
+		for(int i = 0 ; i < symTable.size() ; i++){
+			if(symTable.get(i).sym_name.equalsIgnoreCase(arg)){
+				positionOfSymbol = i;	
+				isSymbolInTable = true;
+			}
+		}
+		// end checking
+		
+		
+		// if not in symbol table create new object
+		if(!isSymbolInTable){
+			SymbolTable s = new SymbolTable();
+			s.sym_name = arg;
+			
+			symTable.add(s);
+			
+			positionOfSymbol = symTable.size() - 1;
+			
+		}
+		// end new object
+		
+		// write $ to file
+		
+		fw.write("$" + positionOfSymbol);	// Symbol operation end
+	
+		return isSymbolInTable;
+	}
+	
 }
 
+
+// symbol table data
 class SymbolTable{
 	String sym_name;
 	int addr;
@@ -384,4 +537,26 @@ class SymbolTable{
 		relocation = r;
 	}
 	
+}
+
+
+// Literal Table
+
+class LiteralTable{
+	
+	String name;
+	int addr;
+	int length;
+	String relocation;
+	
+	public LiteralTable(){
+		this.addr = -1;
+	}
+	
+	public LiteralTable(String n,int a, int l, String r){
+		this.name = n;
+		this.addr = a;
+		this.length = l;
+		this.relocation = r;
+	}
 }
