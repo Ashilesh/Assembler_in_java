@@ -1,0 +1,4 @@
+Prog	50	1	R
+ONE	80	4	R
+TWO	84	4	R
+RES	88	4	R

@@ -101,18 +101,23 @@ public class Main{
 			System.exit(1);
 		}
 		
-		// testing symbol table
-		System.out.println("\nSymbol Table------------");
+		// inserting symbol table in file
+		FileWriter fw = new FileWriter("symobl_table.txt");
 		for(SymbolTable s : symTable){
-			System.out.println(s.sym_name + " " + s.addr + " " + s.length + " " + s.relocation);
+			fw.write(s.sym_name + "\t" + s.addr + "\t" + s.length + "\t" + s.relocation + "\n");
 		}
 		
-		// testing literal table
-			System.out.println("\nLiteral Table------------");
-			for(LiteralTable s : litTable){
-				System.out.println(s.name + " " + s.addr + " " + s.length + " " + s.relocation);
+		fw.close();
+		
+		
+		// inserting literal table in file
+		fw = new FileWriter("literal_table.txt");
+		
+		for(LiteralTable s : litTable){
+			fw.write(s.name + "\t" + s.addr + "\t" + s.length + "\t" + s.relocation + "\n");
 		}
 		
+		fw.close();
 	}
 
 
